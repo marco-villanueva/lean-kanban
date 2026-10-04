@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Lean Kanban — React + Express + SQLite + MCP. Deliberately boring code.",
+  "license": "MIT",
   "packageManager": "pnpm@12.8.1",
   "engines": {
     "node": ">=22"
