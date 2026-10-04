@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import { migrate } from "./db.js";
 import { boardsRouter } from "./boards.js";
@@ -31,5 +31,32 @@ app.use("/api", commentsRouter);
 app.use("/api", importExportRouter);
 
 app.use((req, res) => {
-  res.status(404).json({ error: { code: "NOT_FOUND", message: `Not found: ${req.method} ${req.path}` } });
+  res.status(404).json({
+    error: {
+      code: "NOT_FOUND",
+      message: `Not found: ${req.method} ${req.path}`,
+    },
+  });
 });
+
+const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+  if (error?.type === "entity.parse.failed") {
+    res.status(400).json({
+      error: {
+        code: "INVALID_JSON",
+        message: "Invalid JSON body",
+      },
+    });
+    return;
+  }
+
+  console.error(error);
+  res.status(500).json({
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "Unexpected server error",
+    },
+  });
+};
+
+app.use(errorHandler);

@@ -56,11 +56,11 @@ export function migrate() {
     CREATE INDEX IF NOT EXISTS idx_issues_board ON issues(board_id);
     CREATE INDEX IF NOT EXISTS idx_comments_issue ON comments(issue_id);
   `);
-  // Minimal migration: issue color (nullable, #RRGGBB or null = none).
-  try {
+
+  // Minimal schema evolution without swallowing unrelated SQLite errors.
+  const issueColumns = db.prepare("PRAGMA table_info(issues)").all() as Array<{ name: string }>;
+  if (!issueColumns.some((column) => column.name === "color")) {
     db.exec(`ALTER TABLE issues ADD COLUMN color TEXT;`);
-  } catch {
-    /* already migrated */
   }
 }
 
@@ -75,7 +75,7 @@ export function transaction<T>(fn: () => T): T {
     try {
       db.exec("ROLLBACK");
     } catch {
-      /* ignore */
+      /* ignore rollback failure; preserve original error */
     }
     throw e;
   }

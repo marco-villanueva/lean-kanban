@@ -1,17 +1,18 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db, nowIso } from "./db.js";
+import { boardDescriptionSchema, boardNameSchema } from "./validation.js";
 
 export const boardsRouter = Router();
 
 const createBoardSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  description: z.string().max(2000).optional().default(""),
+  name: boardNameSchema,
+  description: boardDescriptionSchema.optional().default(""),
 });
 
 const updateBoardSchema = z.object({
-  name: z.string().trim().min(1).max(120).optional(),
-  description: z.string().max(2000).optional(),
+  name: boardNameSchema.optional(),
+  description: boardDescriptionSchema.optional(),
 });
 
 function err(res: any, status: number, code: string, message: string) {
@@ -34,15 +35,19 @@ boardsRouter.get("/", (_req, res) => {
   res.json({ boards: rows.map(rowToBoard) });
 });
 
-// POST /api/boards — create (with 3 default columns if none given)
+// POST /api/boards — create
 boardsRouter.post("/", (req, res) => {
   const parsed = createBoardSchema.safeParse(req.body);
-  if (!parsed.success) return err(res, 400, "INVALID_BODY", parsed.error.issues[0]?.message ?? "Invalid body");
+  if (!parsed.success) {
+    return err(res, 400, "INVALID_BODY", parsed.error.issues[0]?.message ?? "Invalid body");
+  }
+
   const id = crypto.randomUUID();
   const now = nowIso();
-  db.prepare("INSERT INTO boards (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)").run(
-    id, parsed.data.name, parsed.data.description ?? "", now, now
-  );
+  db.prepare(
+    "INSERT INTO boards (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)"
+  ).run(id, parsed.data.name, parsed.data.description ?? "", now, now);
+
   const row = db.prepare("SELECT * FROM boards WHERE id = ?").get(id) as any;
   res.status(201).json({ board: rowToBoard(row) });
 });
@@ -51,28 +56,49 @@ boardsRouter.post("/", (req, res) => {
 boardsRouter.get("/:boardId", (req, res) => {
   const board = db.prepare("SELECT * FROM boards WHERE id = ?").get(req.params.boardId) as any;
   if (!board) return err(res, 404, "BOARD_NOT_FOUND", "Board not found");
-  const cols = db.prepare("SELECT * FROM columns WHERE board_id = ? ORDER BY position ASC").all(board.id) as any[];
-  const issues = db.prepare("SELECT * FROM issues WHERE board_id = ? ORDER BY position ASC").all(board.id) as any[];
-  const issueIds = issues.map((i) => i.id);
-  let comments: any[] = [];
-  if (issueIds.length > 0) {
-    const placeholders = issueIds.map(() => "?").join(",");
-    comments = db.prepare(`SELECT * FROM comments WHERE issue_id IN (${placeholders}) ORDER BY created_at ASC`).all(...issueIds) as any[];
-  }
+
+  const cols = db
+    .prepare("SELECT * FROM columns WHERE board_id = ? ORDER BY position ASC")
+    .all(board.id) as any[];
+  const issues = db
+    .prepare("SELECT * FROM issues WHERE board_id = ? ORDER BY position ASC")
+    .all(board.id) as any[];
+  const comments = db.prepare(`
+    SELECT c.*
+    FROM comments c
+    JOIN issues i ON i.id = c.issue_id
+    WHERE i.board_id = ?
+    ORDER BY c.created_at ASC
+  `).all(board.id) as any[];
+
   res.json({
     board: rowToBoard(board),
     columns: cols.map((c) => ({
-      id: c.id, boardId: c.board_id, name: c.name, color: c.color,
-      position: c.position, createdAt: c.created_at, updatedAt: c.updated_at,
+      id: c.id,
+      boardId: c.board_id,
+      name: c.name,
+      color: c.color,
+      position: c.position,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
     })),
     issues: issues.map((i) => ({
-      id: i.id, boardId: i.board_id, columnId: i.column_id, title: i.title,
-      description: i.description ?? "", color: i.color ?? null, position: i.position,
-      createdAt: i.created_at, updatedAt: i.updated_at,
+      id: i.id,
+      boardId: i.board_id,
+      columnId: i.column_id,
+      title: i.title,
+      description: i.description ?? "",
+      color: i.color ?? null,
+      position: i.position,
+      createdAt: i.created_at,
+      updatedAt: i.updated_at,
     })),
     comments: comments.map((c) => ({
-      id: c.id, issueId: c.issue_id, content: c.content,
-      createdAt: c.created_at, updatedAt: c.updated_at,
+      id: c.id,
+      issueId: c.issue_id,
+      content: c.content,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
     })),
   });
 });
@@ -80,13 +106,20 @@ boardsRouter.get("/:boardId", (req, res) => {
 // PATCH /api/boards/:boardId
 boardsRouter.patch("/:boardId", (req, res) => {
   const parsed = updateBoardSchema.safeParse(req.body);
-  if (!parsed.success) return err(res, 400, "INVALID_BODY", parsed.error.issues[0]?.message ?? "Invalid body");
+  if (!parsed.success) {
+    return err(res, 400, "INVALID_BODY", parsed.error.issues[0]?.message ?? "Invalid body");
+  }
+
   const board = db.prepare("SELECT * FROM boards WHERE id = ?").get(req.params.boardId) as any;
   if (!board) return err(res, 404, "BOARD_NOT_FOUND", "Board not found");
+
   const name = parsed.data.name ?? board.name;
   const description = parsed.data.description ?? board.description;
   const now = nowIso();
-  db.prepare("UPDATE boards SET name = ?, description = ?, updated_at = ? WHERE id = ?").run(name, description, now, board.id);
+  db.prepare(
+    "UPDATE boards SET name = ?, description = ?, updated_at = ? WHERE id = ?"
+  ).run(name, description, now, board.id);
+
   const updated = db.prepare("SELECT * FROM boards WHERE id = ?").get(board.id) as any;
   res.json({ board: rowToBoard(updated) });
 });
@@ -95,6 +128,7 @@ boardsRouter.patch("/:boardId", (req, res) => {
 boardsRouter.delete("/:boardId", (req, res) => {
   const board = db.prepare("SELECT * FROM boards WHERE id = ?").get(req.params.boardId) as any;
   if (!board) return err(res, 404, "BOARD_NOT_FOUND", "Board not found");
+
   db.prepare("DELETE FROM boards WHERE id = ?").run(board.id);
   res.status(204).send();
 });
