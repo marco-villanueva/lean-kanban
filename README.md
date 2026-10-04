@@ -1,215 +1,207 @@
 # Lean Kanban
 
-A deliberately small Kanban board built to test Lean product engineering in practice.
+![CI](https://github.com/marco-villanueva/lean-kanban/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-339933)
+![pnpm](https://img.shields.io/badge/pnpm-12.8.1-F69220)
 
-- React + Vite SPA
-- Express REST API
-- SQLite through `node:sqlite`
-- MCP adapter for AI agents
-- Full and Simple JSON portability
-- No auth, users, teams, queues, Redis, ORM, SSR or microservices
+Lean Kanban is a small, local-first Kanban application designed around a Lean product-engineering philosophy: solve the current problem clearly, keep the architecture easy to understand, and add complexity only when real use justifies it.
 
-The project intentionally favors understandable code and cheap change over speculative architecture.
+The application combines a traditional browser UI with a Model Context Protocol (MCP) server so humans and AI agents can work with the same boards through the same underlying REST API.
 
-## Architecture
+## Why this project exists
 
-```text
-Browser
-  │
-  ▼
-React SPA (apps/web)
-  │ HTTP / JSON
-  ▼
-Express API (apps/api)
-  │
-  ▼
-SQLite (data/kanban.db)
+Lean Kanban intentionally explores a simple idea:
 
-Agent
-  │ stdio
-  ▼
-MCP Server (apps/mcp)
-  │ HTTP / JSON
-  └──────────────► Express API
-```
+> Build the smallest clear and maintainable system that solves the current problem, while keeping future change inexpensive.
 
-The MCP server is only an adapter. Business behavior stays in the REST API.
+The repository avoids speculative infrastructure and enterprise abstractions. The current system is a modular but intentionally small monorepo:
+
+~~~text
+Human
+  |
+  v
+React + Vite SPA
+  |
+  | HTTP / JSON
+  v
+Express REST API
+  |
+  v
+SQLite
+
+AI Agent
+  |
+  v
+MCP server over stdio
+  |
+  | HTTP / JSON
+  v
+Same Express REST API
+~~~
+
+The MCP server does not contain business logic. It is an adapter over the same API used by the web application.
+
+## Main features
+
+- Create, edit, search and delete boards.
+- Create any number of Kanban columns.
+- Rename and recolor columns.
+- Drag-and-drop column ordering.
+- Create, edit, move, reorder and delete issues.
+- Optional issue colors.
+- Issue descriptions and comments.
+- Kanban and compact List views.
+- Search issues by title and description.
+- Filter by column.
+- Full-fidelity Kanban JSON export and import.
+- Simpler JSON format intended for people, scripts and LLMs.
+- MCP server for agent-driven board operations.
+- SQLite persistence with no external database service.
+- Integration tests using the Node.js test runner.
+- GitHub Actions CI for install, typecheck, tests and build.
+
+## Stack
+
+| Area | Technology |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite |
+| Data fetching | TanStack Query |
+| Drag and drop | dnd-kit |
+| Backend | Node.js 22+, Express, TypeScript |
+| Validation | Zod |
+| Database | SQLite through node:sqlite |
+| Agent integration | Model Context Protocol |
+| Package manager | pnpm |
+| Testing | node:test through tsx |
+| CI | GitHub Actions |
 
 ## Requirements
 
-- Node.js 22+
-- pnpm 12.8.1
+- Node.js 22 or newer.
+- pnpm 12.8.1.
 
-The repository declares both in `.node-version` and `packageManager`.
+The repository includes a .node-version file and declares the package manager version in package.json.
 
 ## Quick start
 
-```bash
+Clone the repository and install dependencies:
+
+~~~bash
+git clone https://github.com/marco-villanueva/lean-kanban.git
+cd lean-kanban
 pnpm install --frozen-lockfile
+~~~
+
+Start all development workspaces:
+
+~~~bash
 pnpm dev
-```
+~~~
 
-Development services:
+For normal browser development you can run only API and web:
 
-- Web: http://localhost:5173
-- API: http://127.0.0.1:3001
-- Vite proxies `/api` to the API
-- MCP uses stdio and calls `API_BASE`
-
-For normal browser development you can run only web + API:
-
-```bash
+~~~bash
 pnpm dev:api
 pnpm dev:web
-```
+~~~
 
-Health check:
+Default development endpoints:
 
-```bash
-curl http://127.0.0.1:3001/api/health
-```
+| Service | Address |
+| --- | --- |
+| Web | http://localhost:5173 |
+| API | http://127.0.0.1:3001 |
+| Health | http://127.0.0.1:3001/api/health |
+| MCP | stdio process |
 
-## Useful commands
-
-```bash
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm check
-
-pnpm db:migrate
-pnpm db:seed
-pnpm start:api
-```
-
-`pnpm check` is the local quality gate and runs typecheck, tests and build.
+The Vite development server proxies /api requests to the local API.
 
 ## Database
 
-The default database is:
+The default SQLite database is created automatically at:
 
-```text
+~~~text
 data/kanban.db
-```
+~~~
 
-It is created and migrated automatically when the API starts.
+Run migrations explicitly:
 
-To use another database:
-
-```bash
-DB_PATH=/absolute/path/kanban.db pnpm dev:api
-```
-
-To reset local development data:
-
-```bash
-rm data/kanban.db*
+~~~bash
 pnpm db:migrate
-```
+~~~
 
-## Core behavior
+Seed a demo board:
 
-A board contains:
+~~~bash
+pnpm db:seed
+~~~
 
-```text
-Board
-  ├── Columns
-  │    └── Issues
-  │         └── Comments
-```
+Override the database path:
 
-Supported UI flows include:
+~~~bash
+DB_PATH=/absolute/path/to/kanban.db pnpm dev:api
+~~~
 
-- create, edit and delete boards;
-- configurable columns and colors;
-- drag-and-drop column ordering;
-- create, edit, color, reorder and move issues;
-- issue descriptions and comments;
-- Kanban and compact List views;
-- search and column filter;
-- Full JSON export/import;
-- Simple JSON export/import.
+The API enables SQLite foreign keys and WAL mode.
 
-Dragging is intentionally disabled while search or a column filter is active so filtered views cannot create ambiguous persisted ordering.
+## Quality gate
 
-## Import / Export
+The main local verification command is:
 
-### Full Kanban JSON
+~~~bash
+pnpm check
+~~~
 
-Intended for faithful backup and reconstruction.
+It runs:
 
-```json
-{
-  "format": "lean-kanban",
-  "version": 1,
-  "board": {
-    "name": "Product",
-    "description": ""
-  },
-  "columns": [],
-  "issues": []
-}
-```
+~~~text
+typecheck
+test
+build
+~~~
 
-It preserves:
+Individual commands are also available:
 
-- board metadata;
-- column order and colors;
-- issues;
-- issue order and colors;
-- descriptions;
-- comments.
+~~~bash
+pnpm typecheck
+pnpm test
+pnpm build
+~~~
 
-Example:
+CI runs the same quality gate on pushes and pull requests.
 
-```text
-examples/full-board.kanban.json
-```
+## Using the application
 
-### Simple JSON
+The browser UI supports:
 
-Intended for people, scripts and LLMs.
+1. Create or import a board.
+2. Add and configure columns.
+3. Create issues inside columns.
+4. Drag issues or columns to reorder them.
+5. Open an issue to edit its title, description, status, color and comments.
+6. Switch between Kanban and List views.
+7. Search and filter issues.
+8. Export a board as Full Kanban JSON or Simple JSON.
 
-```json
-{
-  "name": "Product",
-  "columns": [
-    {
-      "name": "Todo",
-      "color": "#2563EB",
-      "issues": [
-        {
-          "title": "Draft copy",
-          "comments": ["Keep it short"]
-        }
-      ]
-    }
-  ]
-}
-```
+When search or a column filter is active, drag-and-drop reordering is intentionally disabled. This avoids persisting ambiguous positions from a filtered view.
 
-Example:
+See docs/user-guide.md for the complete user guide.
 
-```text
-examples/simple-board.json
-```
+## MCP for AI agents
 
-Invalid fixtures are also included for validation work.
+Lean Kanban includes an MCP server in apps/mcp.
 
-## MCP
+Build the repository and start the API:
 
-The MCP server uses stdio and talks to the existing REST API.
-
-Build it first:
-
-```bash
+~~~bash
 pnpm build
 pnpm start:api
-```
+~~~
 
-Generic MCP client configuration:
+A generic MCP client configuration looks like:
 
-```json
+~~~json
 {
   "mcpServers": {
     "lean-kanban": {
@@ -223,157 +215,161 @@ Generic MCP client configuration:
     }
   }
 }
-```
+~~~
 
-A copyable template is available at:
+A copyable template is available in docs/mcp-client.example.json.
 
-```text
-docs/mcp-client.example.json
-```
+Example agent requests:
 
-### MCP behavior
-
-Tools accept ids and, where useful, exact names or titles.
-
-Examples:
-
-```text
-Create a board "MVP".
+~~~text
+Create a board called MVP.
 
 Create columns Todo, Doing and Done.
 
-Create an issue "Build landing page" in Todo.
+Add an issue called "Draft landing page" to Todo.
 
-Move "Build landing page" to Doing.
+Move "Draft landing page" to Doing.
 
-Set "Build landing page" to #CA8A04.
+Set that issue color to #CA8A04.
 
 Add the comment "Waiting for copy review".
 
 Export MVP as Simple JSON.
-```
+~~~
 
-Important MCP details:
+Important MCP behavior:
 
-- `get_board` omits comments by default to reduce tokens;
-- pass `includeComments: true` only when needed;
-- `move_issue` appends to the target column when `position` is omitted;
-- `import_board` accepts the JSON object directly in `data`;
-- `delete_board` requires `confirm: true`;
-- requests time out after 10 seconds;
-- connection errors explain how to start or configure the API.
+- Board, column and issue references can usually be IDs or exact names/titles.
+- get_board omits comments by default to reduce token usage.
+- get_board can include comments with includeComments: true.
+- move_issue appends to the target column if position is omitted.
+- import_board accepts an object directly through its data argument.
+- delete_board requires confirm: true.
+- MCP HTTP calls time out after 10 seconds.
+- If the API is unavailable, the MCP server returns an actionable connection error.
 
-Current tools:
+See docs/mcp.md for the complete tool reference and recommended agent workflows.
 
-```text
-list_boards
-get_board
-create_board
-update_board
-delete_board
+## Import and export
 
-create_column
-update_column
-delete_column
-reorder_columns
+Lean Kanban supports two formats.
 
-list_issues
-get_issue
-create_issue
-update_issue
-move_issue
-delete_issue
+### Full Kanban JSON
 
-list_comments
-add_comment
-update_comment
-delete_comment
+Designed for faithful backup and reconstruction.
 
-export_board
-import_board
-```
+It preserves:
 
-## Testing
+- board name and description;
+- columns;
+- column colors and ordering;
+- issues;
+- issue descriptions, colors and ordering;
+- comments.
 
-The API integration suite uses the Node.js test runner through `tsx`; no additional test framework is required.
+Example:
 
-Coverage focuses on product-critical behavior:
+~~~text
+examples/full-board.kanban.json
+~~~
 
-- board CRUD;
-- column ordering and deletion;
-- issue ordering and moves;
-- comments;
-- validation;
-- Full JSON round-trip;
-- Simple JSON round-trip;
-- invalid imports.
+### Simple JSON
 
-Run:
+Designed for interoperability with humans, scripts and LLMs.
 
-```bash
-pnpm test
-```
+Example:
 
-## CI
+~~~text
+examples/simple-board.json
+~~~
 
-GitHub Actions runs on pushes and pull requests:
+See docs/import-export.md for the schemas, validation rules and examples.
 
-```text
-install --frozen-lockfile
-typecheck
-test
-build
-```
+## Documentation
 
-Workflow:
+Complete project documentation lives in docs/.
 
-```text
-.github/workflows/ci.yml
-```
+Start here:
 
-## Security model
+- docs/README.md — documentation index.
+- docs/getting-started.md — installation and first run.
+- docs/user-guide.md — complete browser UI guide.
+- docs/architecture.md — architecture and design decisions.
+- docs/data-model.md — SQLite schema and domain model.
+- docs/api-reference.md — REST API reference.
+- docs/mcp.md — MCP configuration, tools and agent workflows.
+- docs/import-export.md — portable JSON formats.
+- docs/development.md — repository development guide.
+- docs/testing.md — test strategy and CI.
+- docs/troubleshooting.md — common problems and recovery steps.
+- docs/release-checklist.md — release-candidate verification.
+- SECURITY.md — current security model.
+- AGENTS.md — instructions for coding and product agents.
 
-Lean Kanban currently has **no authentication or authorization**.
+## Repository structure
 
-The API binds to `127.0.0.1` by default. Keep it local unless authentication and an explicit deployment security model are added.
+~~~text
+lean-kanban/
+├── apps/
+│   ├── api/          Express REST API and SQLite access
+│   ├── web/          React + Vite application
+│   └── mcp/          MCP adapter over the REST API
+├── docs/             Project documentation
+├── examples/         Valid and invalid JSON examples
+├── data/             Local SQLite data, ignored by Git
+├── .github/
+│   └── workflows/    CI
+├── AGENTS.md          Agent instructions
+├── SECURITY.md        Security notes
+└── README.md
+~~~
 
-Do not expose the current API directly to the public Internet or an untrusted network.
+## Security
 
-See `SECURITY.md`.
+Lean Kanban currently has no authentication or authorization.
 
-## Production status
+The API binds to 127.0.0.1 by default and is intended for local use. Do not expose the current API to the public Internet or an untrusted network.
 
-The current target is a local single-user application and agent tool.
+Anyone who can reach the API can read, create, modify and delete board data.
 
-The web and API remain separately built:
+See SECURITY.md for details.
 
-```bash
-pnpm build
-pnpm start:api
-pnpm --filter @lean-kanban/web preview
-```
+## Project principles
 
-Serving the SPA from Express is intentionally deferred until there is a concrete deployment requirement.
+The project intentionally prefers:
 
-## Project structure
+- REST over GraphQL.
+- SQLite over an external database until scaling pressure exists.
+- A single API over microservices.
+- Explicit feature code over generic framework layers.
+- Managed complexity over speculative abstractions.
+- A small dependency set.
+- Real tests around important workflows instead of arbitrary coverage targets.
+- MCP as an adapter over the product API rather than a second domain implementation.
 
-```text
-apps/
-├── api/
-├── web/
-└── mcp/
+Features currently outside scope include auth, organizations, teams, assignees, priorities, labels, due dates, attachments, realtime collaboration, notifications, analytics, billing, PostgreSQL and remote MCP hosting.
 
-examples/
-docs/
-.github/workflows/
-```
+They should be added only when a concrete requirement justifies them.
 
-The project should remain understandable by browsing these directories directly. New architectural layers should be added only when real product pressure justifies them.
+## Contributing
 
-## Release checklist
+Issues and pull requests are welcome.
 
-Before tagging a release candidate, run the automated and manual checklist in:
+Before submitting a change:
 
-```text
-docs/release-checklist.md
-```
+~~~bash
+pnpm install --frozen-lockfile
+pnpm check
+~~~
+
+Keep changes small, preserve the Lean architecture, and avoid introducing dependencies or architectural layers unless they solve a current requirement.
+
+See docs/development.md and AGENTS.md before larger changes.
+
+## License
+
+Lean Kanban is released under the MIT License.
+
+See LICENSE for the full text.
+
+Copyright © 2026 Marco Villanueva.
