@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+  DndContext, DragOverlay, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragStartEvent, type DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { api, COLORS, DEFAULT_COLUMN_COLOR, downloadJson, type Column, type Issue } from "../api";
 import IssueDrawer from "../components/IssueDrawer";
@@ -22,19 +25,26 @@ export default function BoardPage() {
   const [dragging, setDragging] = useState<{ issue?: Issue } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [dndError, setDndError] = useState("");
 
   const board = useQuery({ queryKey: ["board", boardId], queryFn: () => api.getBoard(boardId) });
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const invalidate = () => qc.invalidateQueries({ queryKey: ["board", boardId] });
+  const dndDisabled = Boolean(search.trim() || filterCol);
 
   const moveIssue = useMutation({
     mutationFn: ({ id, columnId, position }: { id: string; columnId: string; position: number }) =>
       api.moveIssue(id, columnId, position),
-    onSuccess: invalidate,
+    onSuccess: () => { setDndError(""); invalidate(); },
+    onError: (e: Error) => setDndError(e.message),
   });
   const reorderCols = useMutation({
     mutationFn: (ids: string[]) => api.reorderColumns(boardId, ids),
-    onSuccess: invalidate,
+    onSuccess: () => { setDndError(""); invalidate(); },
+    onError: (e: Error) => setDndError(e.message),
   });
 
   const cols = useMemo(() => [...(board.data?.columns ?? [])].sort((a, b) => a.position - b.position), [board.data]);
@@ -56,6 +66,7 @@ export default function BoardPage() {
   }, [cols, board.data]);
 
   function onDragStart(e: DragStartEvent) {
+    if (dndDisabled) return;
     const kind = e.active.data.current?.kind;
     if (kind === "issue") setDragging({ issue: e.active.data.current?.issue });
     else setDragging({});
@@ -63,45 +74,60 @@ export default function BoardPage() {
 
   function onDragEnd(e: DragEndEvent) {
     setDragging(null);
+    if (dndDisabled) return;
+
     const { active, over } = e;
     if (!over) return;
+
     const aKind = active.data.current?.kind;
+    const overKind = over.data.current?.kind;
+
     if (aKind === "column") {
       const from = cols.findIndex((c) => c.id === active.id);
-      const to = cols.findIndex((c) => c.id === over.id);
+      const targetColumnId = overKind === "column"
+        ? String(over.id)
+        : overKind === "issue"
+          ? (over.data.current?.issue as Issue | undefined)?.columnId
+          : undefined;
+      const to = targetColumnId ? cols.findIndex((c) => c.id === targetColumnId) : -1;
+
       if (from < 0 || to < 0 || from === to) return;
+
       const ids = cols.map((c) => c.id);
       const [moved] = ids.splice(from, 1);
       ids.splice(to, 0, moved);
       reorderCols.mutate(ids);
       return;
     }
-    // issue
-    const issue: Issue = active.data.current?.issue;
+
+    const issue: Issue | undefined = active.data.current?.issue;
     if (!issue) return;
-    // over can be an issue or a column
-    const overKind = over.data.current?.kind;
+
     let targetColId: string;
     let targetIndex: number;
+
     if (overKind === "column") {
-      targetColId = over.id as string;
+      targetColId = String(over.id);
       targetIndex = (issuesByCol.get(targetColId) ?? []).length;
-    } else {
-      const overIssue: Issue = over.data.current?.issue;
+    } else if (overKind === "issue") {
+      const overIssue: Issue | undefined = over.data.current?.issue;
+      if (!overIssue) return;
+
       targetColId = overIssue.columnId;
       const list = [...(issuesByCol.get(targetColId) ?? [])].sort((a, b) => a.position - b.position);
-      let idx = list.findIndex((i) => i.id === overIssue.id);
-      if (issue.columnId === targetColId) {
-        const from = list.findIndex((i) => i.id === issue.id);
-        if (from < idx) idx -= 0; // server handles splice; keep simple
-      }
-      targetIndex = Math.max(0, idx);
+      const overIndex = list.findIndex((i) => i.id === overIssue.id);
+      if (overIndex < 0) return;
+      targetIndex = overIndex;
+    } else {
+      return;
     }
+
     if (issue.columnId === targetColId) {
       const list = issuesByCol.get(targetColId) ?? [];
       const from = list.findIndex((i) => i.id === issue.id);
       if (from === targetIndex) return;
     }
+
     moveIssue.mutate({ id: issue.id, columnId: targetColId, position: targetIndex });
   }
 
@@ -131,11 +157,20 @@ export default function BoardPage() {
   );
 
   const b = board.data.board;
+  const normalizedSearch = search.trim().toLowerCase();
   const filtered = (board.data.issues ?? []).filter((i) => {
     if (filterCol && i.columnId !== filterCol) return false;
-    if (search && !(i.title + " " + (i.description ?? "")).toLowerCase().includes(search.toLowerCase())) return false;
+    if (normalizedSearch && !(i.title + " " + (i.description ?? "")).toLowerCase().includes(normalizedSearch)) return false;
     return true;
   });
+  const visibleCols = filterCol ? cols.filter((c) => c.id === filterCol) : cols;
+  const visibleIssuesByCol = new Map<string, Issue[]>();
+  for (const c of visibleCols) visibleIssuesByCol.set(c.id, []);
+  for (const issue of filtered) {
+    if (visibleIssuesByCol.has(issue.columnId)) visibleIssuesByCol.get(issue.columnId)!.push(issue);
+  }
+  for (const list of visibleIssuesByCol.values()) list.sort((a, b) => a.position - b.position);
+
   const colName = (id: string) => cols.find((c) => c.id === id)?.name ?? "?";
   const colColor = (id: string) => cols.find((c) => c.id === id)?.color ?? "#64748B";
 
@@ -181,6 +216,13 @@ export default function BoardPage() {
         </div>
       </div>
 
+      {dndError && <div className="error" style={{ marginBottom: 8 }}>{dndError}</div>}
+      {view === "kanban" && dndDisabled && (
+        <div className="muted" style={{ marginBottom: 8 }}>
+          Clear search and column filters to drag and reorder.
+        </div>
+      )}
+
       {view === "list" && (
         <div className="list-wrap">
           <table className="table table-compact">
@@ -210,14 +252,15 @@ export default function BoardPage() {
 
       {view === "kanban" && (
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <SortableContext items={cols.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+          <SortableContext items={visibleCols.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
             <div className="kanban">
-              {cols.map((c) => (
-                <KanbanColumn key={c.id} column={c} issues={issuesByCol.get(c.id) ?? []}
+              {visibleCols.map((c) => (
+                <KanbanColumn key={c.id} column={c} issues={visibleIssuesByCol.get(c.id) ?? []}
                   commentCounts={commentCounts} selectedId={activeIssue} dragActive={dragActive}
-                  allColumns={cols} onOpen={setActiveIssue} onChanged={invalidate} />
+                  allColumns={cols} dndDisabled={dndDisabled}
+                  onOpen={setActiveIssue} onChanged={invalidate} />
               ))}
-              <AddColumn boardId={boardId} onChanged={invalidate} />
+              {!filterCol && <AddColumn boardId={boardId} onChanged={invalidate} />}
             </div>
           </SortableContext>
           <DragOverlay>
@@ -248,13 +291,18 @@ export default function BoardPage() {
   );
 }
 
-function KanbanColumn({ column, issues, commentCounts, selectedId, dragActive, allColumns, onOpen, onChanged }: {
+function KanbanColumn({ column, issues, commentCounts, selectedId, dragActive, allColumns, dndDisabled, onOpen, onChanged }: {
   column: Column; issues: Issue[]; commentCounts: Map<string, number>; selectedId: string | null;
-  dragActive: boolean; allColumns: Column[]; onOpen: (id: string) => void; onChanged: () => void;
+  dragActive: boolean; allColumns: Column[]; dndDisabled: boolean;
+  onOpen: (id: string) => void; onChanged: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: column.id, data: { kind: "column" } });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: column.id,
+    data: { kind: "column" },
+    disabled: dndDisabled,
+  });
   const style = { transform: CSS.Transform.toString(transform), transition };
-  const { setNodeRef: setDropRef, isOver } = useDroppableColumn(column.id);
+  const { setNodeRef: setDropRef, isOver } = useDroppableColumn(column.id, dndDisabled);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
@@ -371,7 +419,7 @@ function KanbanColumn({ column, issues, commentCounts, selectedId, dragActive, a
         <SortableContext items={issues.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {issues.map((i) => (
             <KanbanCard key={i.id} issue={i} comments={commentCounts.get(i.id) ?? 0}
-              selected={selectedId === i.id} onOpen={onOpen} />
+              selected={selectedId === i.id} dndDisabled={dndDisabled} onOpen={onOpen} />
           ))}
         </SortableContext>
         {issues.length === 0 && dragActive && <div className="drop-hint">Drop here</div>}
@@ -424,14 +472,18 @@ function AddColumn({ boardId, onChanged }: { boardId: string; onChanged: () => v
 }
 
 import { useDroppable } from "@dnd-kit/core";
-function useDroppableColumn(id: string) {
-  return useDroppable({ id, data: { kind: "column" } });
+function useDroppableColumn(id: string, disabled = false) {
+  return useDroppable({ id, data: { kind: "column" }, disabled });
 }
 
-function KanbanCard({ issue, comments, selected, onOpen }: {
-  issue: Issue; comments: number; selected: boolean; onOpen: (id: string) => void;
+function KanbanCard({ issue, comments, selected, dndDisabled, onOpen }: {
+  issue: Issue; comments: number; selected: boolean; dndDisabled: boolean; onOpen: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id, data: { kind: "issue", issue } });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: issue.id,
+    data: { kind: "issue", issue },
+    disabled: dndDisabled,
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -547,21 +599,28 @@ function CreateIssueButton({ boardId, columns, onCreated }: { boardId: string; c
   const [open, setOpen] = useState(false);
   const [columnId, setColumnId] = useState("");
   const [title, setTitle] = useState("");
+  const [error, setError] = useState("");
   const ref = useCloseOnOutside(open, () => setOpen(false));
 
   async function submit() {
     const t = title.trim();
     const col = columnId || columns[0]?.id;
     if (!t || !col) return;
-    await api.createIssue(boardId, col, t);
-    setTitle("");
-    setOpen(false);
-    onCreated();
+
+    setError("");
+    try {
+      await api.createIssue(boardId, col, t);
+      setTitle("");
+      setOpen(false);
+      onCreated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create issue.");
+    }
   }
 
   return (
     <div className="menu-wrap" ref={ref}>
-      <button className="btn primary" aria-haspopup="dialog" aria-expanded={open} onClick={() => { setColumnId(columns[0]?.id ?? ""); setOpen((v) => !v); }}>
+      <button className="btn primary" aria-haspopup="dialog" aria-expanded={open} onClick={() => { setError(""); setColumnId(columns[0]?.id ?? ""); setOpen((v) => !v); }}>
         + Create
       </button>
       {open && (
@@ -569,6 +628,7 @@ function CreateIssueButton({ boardId, columns, onCreated }: { boardId: string; c
           <select className="select" value={columnId} onChange={(e) => setColumnId(e.target.value)} aria-label="Column">
             {columns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {error && <div className="error">{error}</div>}
           <input
             className="input"
             autoFocus
