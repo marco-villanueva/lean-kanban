@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 
-// Import dialog (design.md §17): paste or upload JSON, preview, import as new board.
 export default function ImportDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const nav = useNavigate();
@@ -12,17 +11,39 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
   const [preview, setPreview] = useState<{ kind: string; name: string; columns: number; issues: number } | null>(null);
   const [pending, setPending] = useState(false);
 
-  function parse(v: string) {
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function parse(value: string) {
     setError("");
     setPreview(null);
-    if (!v.trim()) return;
+    if (!value.trim()) return;
+
     try {
-      const json = JSON.parse(v);
+      const json = JSON.parse(value);
       if (json.format === "lean-kanban") {
-        setPreview({ kind: "kanban", name: json.board?.name ?? "?", columns: json.columns?.length ?? 0, issues: json.issues?.length ?? 0 });
+        setPreview({
+          kind: "kanban",
+          name: json.board?.name ?? "?",
+          columns: json.columns?.length ?? 0,
+          issues: json.issues?.length ?? 0,
+        });
       } else if (json.name && Array.isArray(json.columns)) {
-        const n = json.columns.reduce((a: number, c: any) => a + (c.issues?.length ?? 0), 0);
-        setPreview({ kind: "simple", name: json.name, columns: json.columns.length, issues: n });
+        const issues = json.columns.reduce(
+          (total: number, column: any) => total + (column.issues?.length ?? 0),
+          0,
+        );
+        setPreview({
+          kind: "simple",
+          name: json.name,
+          columns: json.columns.length,
+          issues,
+        });
       } else {
         setError("Unknown format. Expected Kanban JSON or Simple JSON.");
       }
@@ -31,11 +52,11 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function onFile(f: File | undefined) {
-    if (!f) return;
-    const v = await f.text();
-    setText(v);
-    parse(v);
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    const value = await file.text();
+    setText(value);
+    parse(value);
   }
 
   async function doImport() {
@@ -55,22 +76,34 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-label="Import board" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label="Import board" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <strong>Import board</strong>
           <button className="icon-btn" onClick={onClose} aria-label="Close import">×</button>
         </div>
+
         <div className="row" style={{ margin: "8px 0" }}>
           <label className="btn">
             Upload JSON
-            <input type="file" accept="application/json,.json" hidden
-              onChange={(e) => onFile(e.target.files?.[0])} />
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => onFile(e.target.files?.[0])}
+            />
           </label>
           <span className="muted">or paste below</span>
         </div>
-        <textarea className="textarea" rows={8} placeholder='{"name": "Product Board", "columns": [...]}'
-          value={text} onChange={(e) => { setText(e.target.value); parse(e.target.value); }}
-          aria-label="Import JSON" />
+
+        <textarea
+          className="textarea"
+          rows={8}
+          placeholder='{"name": "Product Board", "columns": [...]}'
+          value={text}
+          onChange={(e) => { setText(e.target.value); parse(e.target.value); }}
+          aria-label="Import JSON"
+        />
+
         {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
         {preview && (
           <div className="card" style={{ marginTop: 8 }}>
@@ -78,6 +111,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
             <div className="muted" style={{ marginTop: 4 }}>Full validation runs when you import.</div>
           </div>
         )}
+
         <div className="row" style={{ marginTop: 8, justifyContent: "flex-end" }}>
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           <button className="btn primary" disabled={!text.trim() || !preview || pending} onClick={doImport}>

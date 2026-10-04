@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, COLORS, type Column } from "../api";
+import { api, type Column } from "../api";
+import ColorPicker from "./ColorPicker";
 
-// Board settings drawer (design.md §18). Same mutations as the old inline
-// panel, only moved out of the main flow. No new features.
 export default function BoardSettingsDrawer({ board, columns, onClose, onChanged }: {
   board: { id: string; name: string; description: string };
   columns: Column[];
@@ -23,6 +22,14 @@ export default function BoardSettingsDrawer({ board, columns, onClose, onChanged
   const [delTarget, setDelTarget] = useState<string | null>(null);
   const [moveTo, setMoveTo] = useState("");
   const [newCol, setNewCol] = useState("");
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function saveBoard() {
     setError("");
@@ -53,11 +60,11 @@ export default function BoardSettingsDrawer({ board, columns, onClose, onChanged
   }
 
   async function addCol() {
-    const t = newCol.trim();
-    if (!t) return;
+    const value = newCol.trim();
+    if (!value) return;
     setError("");
     try {
-      await api.createColumn(board.id, t);
+      await api.createColumn(board.id, value);
       setNewCol("");
       onChanged();
     } catch (e: any) { setError(e.message); }
@@ -72,7 +79,7 @@ export default function BoardSettingsDrawer({ board, columns, onClose, onChanged
 
   return (
     <div className="drawer-backdrop" onClick={onClose}>
-      <aside className="drawer" role="dialog" aria-label="Board settings" onClick={(e) => e.stopPropagation()}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-label="Board settings" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <strong>Board settings</strong>
           <button className="icon-btn" onClick={onClose} aria-label="Close settings">×</button>
@@ -92,55 +99,71 @@ export default function BoardSettingsDrawer({ board, columns, onClose, onChanged
 
         <div className="drawer-section">
           <div className="field-label">Columns ({columns.length})</div>
-          {columns.map((c) => (
-            <div key={c.id}>
-              {editing === c.id ? (
+          {columns.map((column) => (
+            <div key={column.id}>
+              {editing === column.id ? (
                 <div className="col-rename" style={{ marginTop: 6 }}>
-                  <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)}
-                    placeholder={c.name} aria-label="Column name"
-                    onKeyDown={(e) => { if (e.key === "Enter") saveCol(c.id); }} />
-                  <div className="color-pick">
-                    {COLORS.map((col) => (
-                      <button key={col} style={{ background: col }} aria-label={`Color ${col}`}
-                        className={editColor === col ? "sel" : ""} onClick={() => setEditColor(col)} />
-                    ))}
-                  </div>
+                  <input
+                    className="input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder={column.name}
+                    aria-label="Column name"
+                    onKeyDown={(e) => { if (e.key === "Enter") saveCol(column.id); }}
+                  />
+                  <ColorPicker
+                    value={editColor}
+                    label="Column color"
+                    onChange={(next) => setEditColor(next ?? "#64748B")}
+                  />
                   <div className="row">
-                    <input type="color" value={editColor} onChange={(e) => setEditColor(e.target.value)} aria-label="Custom color" />
-                    <button className="btn primary" onClick={() => saveCol(c.id)}>Save</button>
+                    <button className="btn primary" onClick={() => saveCol(column.id)}>Save</button>
                     <button className="btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
                   </div>
                 </div>
               ) : (
                 <div className="settings-row">
-                  <span className="dot" style={{ background: c.color }} />
-                  <span className="settings-name">{c.name}</span>
-                  <button className="btn-ghost" onClick={() => { setEditing(c.id); setEditName(c.name); setEditColor(c.color); }}>Rename</button>
+                  <span className="dot" style={{ background: column.color }} />
+                  <span className="settings-name">{column.name}</span>
+                  <button className="btn-ghost" onClick={() => {
+                    setEditing(column.id);
+                    setEditName(column.name);
+                    setEditColor(column.color);
+                  }}>Edit</button>
                   <button className="btn-ghost danger-text" onClick={() => {
-                    setMoveTo(columns.find((x) => x.id !== c.id)?.id ?? "");
-                    setDelTarget(c.id);
+                    setMoveTo(columns.find((item) => item.id !== column.id)?.id ?? "");
+                    setDelTarget(column.id);
                   }}>Delete</button>
                 </div>
               )}
-              {delTarget === c.id && (
+
+              {delTarget === column.id && (
                 <div className="col-confirm" role="dialog" aria-label="Delete column">
-                  <span className="muted">Delete “{c.name}”?</span>
+                  <span className="muted">Delete “{column.name}”?</span>
                   <select className="select" value={moveTo} onChange={(e) => setMoveTo(e.target.value)} aria-label="Move issues to">
-                    {columns.filter((x) => x.id !== c.id).map((x) => <option key={x.id} value={x.id}>Move issues to {x.name}</option>)}
+                    {columns.filter((item) => item.id !== column.id).map((item) => (
+                      <option key={item.id} value={item.id}>Move issues to {item.name}</option>
+                    ))}
                   </select>
                   <div className="row">
-                    <button className="btn primary" disabled={!moveTo} onClick={() => delCol(c.id, "move")}>Move issues</button>
-                    <button className="btn danger" onClick={() => delCol(c.id, "delete")}>Delete issues too</button>
+                    <button className="btn primary" disabled={!moveTo} onClick={() => delCol(column.id, "move")}>Move issues</button>
+                    <button className="btn danger" onClick={() => delCol(column.id, "delete")}>Delete issues too</button>
                     <button className="btn-ghost" onClick={() => setDelTarget(null)}>Cancel</button>
                   </div>
                 </div>
               )}
             </div>
           ))}
+
           <div className="row" style={{ marginTop: 8 }}>
-            <input className="input" placeholder="+ Add column" value={newCol}
+            <input
+              className="input"
+              placeholder="+ Add column"
+              value={newCol}
               onChange={(e) => setNewCol(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addCol(); }} aria-label="New column name" />
+              onKeyDown={(e) => { if (e.key === "Enter") addCol(); }}
+              aria-label="New column name"
+            />
             <button className="btn" disabled={!newCol.trim()} onClick={addCol}>Add</button>
           </div>
         </div>

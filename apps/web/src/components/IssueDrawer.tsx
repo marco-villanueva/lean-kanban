@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, COLORS, type Column } from "../api";
+import { api, type Column } from "../api";
+import ColorPicker from "./ColorPicker";
 
-// Right-side drawer (design.md §12). Same data + mutations as the old modal,
-// only presentation + status changer changed. No new features.
 export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
   issueId: string; columns: Column[]; onClose: () => void; onChanged: () => void;
 }) {
@@ -34,7 +33,6 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, editingComment]);
 
-  // Close ⋯ menus on outside click (same pattern as board menus, local version).
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (!(e.target as HTMLElement).closest?.(".menu-wrap")) {
@@ -47,8 +45,7 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
   }, []);
 
   const issue = detail.data?.issue;
-  const colOf = (id: string) => columns.find((c) => c.id === id);
-  const current = issue ? colOf(issue.columnId) : undefined;
+  const current = issue ? columns.find((column) => column.id === issue.columnId) : undefined;
 
   const saveTitle = useMutation({
     mutationFn: () => api.updateIssue(issueId, { title: title.trim() }),
@@ -75,7 +72,7 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
     if (!issue || columnId === issue.columnId) return;
     setError("");
     try {
-      await api.moveIssue(issueId, columnId, 999); // server clamps to end of column
+      await api.moveIssue(issueId, columnId, 999);
       refresh();
     } catch (e: any) { setError(e.message); }
   }
@@ -90,13 +87,13 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
 
   return (
     <div className="drawer-backdrop" onClick={onClose}>
-      <aside className="drawer" role="dialog" aria-label={issue ? issue.title : "Issue detail"} onClick={(e) => e.stopPropagation()}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-label={issue ? issue.title : "Issue detail"} onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <span className="muted">#{issueId.slice(0, 4)}</span>
           <div className="row">
             <div className="menu-wrap">
               <button className="icon-btn" aria-label="Issue actions" aria-haspopup="menu"
-                aria-expanded={issueMenu} onClick={() => setIssueMenu((v) => !v)}>
+                aria-expanded={issueMenu} onClick={() => setIssueMenu((value) => !value)}>
                 ⋯
               </button>
               {issueMenu && (
@@ -111,9 +108,11 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
             <button className="icon-btn" onClick={onClose} aria-label="Close issue">×</button>
           </div>
         </div>
+
         {detail.isLoading && <p className="muted">Loading…</p>}
         {detail.isError && <div className="error">Could not load issue. Try again.</div>}
         {error && <div className="error">{error}</div>}
+
         {issue && (
           <>
             {!editing ? (
@@ -156,79 +155,59 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
 
             <div className="drawer-section">
               <div className="field-label">Status</div>
-              <select
-                className="select"
-                style={{ maxWidth: 220, color: current?.color ?? undefined, fontWeight: 500 }}
-                value={issue.columnId}
-                onChange={(e) => moveTo(e.target.value)}
-                aria-label="Move issue to column"
-              >
-                {columns.map((c) => <option key={c.id} value={c.id}>● {c.name}</option>)}
-              </select>
+              <div className="status-control">
+                <span className="dot" style={{ background: current?.color ?? "#64748B" }} aria-hidden="true" />
+                <select
+                  className="select"
+                  value={issue.columnId}
+                  onChange={(e) => moveTo(e.target.value)}
+                  aria-label="Move issue to column"
+                >
+                  {columns.map((column) => <option key={column.id} value={column.id}>{column.name}</option>)}
+                </select>
+              </div>
             </div>
 
             <div className="drawer-section">
               <div className="field-label">Color</div>
-              <div className="color-pick" role="group" aria-label="Issue color">
-                <button
-                  className={`color-none${!issue.color ? " sel" : ""}`}
-                  onClick={() => setColor(null)}
-                  aria-label="No color"
-                  title="None"
-                >
-                  ∅
-                </button>
-                {COLORS.map((c) => (
-                  <button
-                    key={c}
-                    style={{ background: c }}
-                    className={issue.color === c ? "sel" : ""}
-                    onClick={() => setColor(c)}
-                    aria-label={`Color ${c}`}
-                    title={c}
-                  />
-                ))}
-              </div>
-              <div className="row" style={{ marginTop: 6 }}>
-                <input
-                  type="color"
-                  value={issue.color ?? "#64748B"}
-                  onChange={(e) => setColor(e.target.value)}
-                  aria-label="Custom issue color"
-                />
-                <span className="muted">{issue.color ?? "None"}</span>
-              </div>
+              <ColorPicker value={issue.color} allowNone label="Issue color" onChange={setColor} />
             </div>
 
             <div className="drawer-section">
               <div className="field-label">Comments ({detail.data?.comments.length ?? 0})</div>
-              {(detail.data?.comments ?? []).map((c) => (
-                <div key={c.id} className="comment">
-                  {editingComment === c.id ? (
+              {(detail.data?.comments ?? []).map((item) => (
+                <div key={item.id} className="comment">
+                  {editingComment === item.id ? (
                     <div className="row">
                       <input className="input" value={editContent} onChange={(e) => setEditContent(e.target.value)} aria-label="Edit comment" />
-                      <button className="btn primary" onClick={async () => {
-                        await api.updateComment(c.id, editContent); setEditingComment(null); refresh();
+                      <button className="btn primary" disabled={!editContent.trim()} onClick={async () => {
+                        await api.updateComment(item.id, editContent.trim());
+                        setEditingComment(null);
+                        refresh();
                       }}>Save</button>
                     </div>
                   ) : (
                     <>
-                      <div className="comment-body">{c.content}</div>
+                      <div className="comment-body">{item.content}</div>
                       <div className="comment-meta">
-                        <span>{new Date(c.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                        <span>{new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                         <div className="menu-wrap">
                           <button className="icon-btn" style={{ width: 22, height: 22 }} aria-label="Comment actions"
-                            aria-haspopup="menu" aria-expanded={commentMenu === c.id}
-                            onClick={() => setCommentMenu(commentMenu === c.id ? null : c.id)}>
+                            aria-haspopup="menu" aria-expanded={commentMenu === item.id}
+                            onClick={() => setCommentMenu(commentMenu === item.id ? null : item.id)}>
                             ⋯
                           </button>
-                          {commentMenu === c.id && (
+                          {commentMenu === item.id && (
                             <div className="menu" role="menu">
                               <button className="menu-item" role="menuitem" onClick={() => {
-                                setCommentMenu(null); setEditingComment(c.id); setEditContent(c.content);
+                                setCommentMenu(null);
+                                setEditingComment(item.id);
+                                setEditContent(item.content);
                               }}>Edit</button>
                               <button className="menu-item danger" role="menuitem" onClick={async () => {
-                                setCommentMenu(null); await api.deleteComment(c.id); refresh();
+                                setCommentMenu(null);
+                                await api.deleteComment(item.id);
+                                refresh();
                               }}>Delete</button>
                             </div>
                           )}
@@ -248,7 +227,6 @@ export default function IssueDrawer({ issueId, columns, onClose, onChanged }: {
                 <button className="btn primary" disabled={!comment.trim()} onClick={() => addComment.mutate()}>Add</button>
               </div>
             </div>
-
           </>
         )}
       </aside>
