@@ -10,10 +10,10 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { api, COLORS, DEFAULT_COLUMN_COLOR, downloadJson, type Column, type Issue } from "../api";
+import { api, DEFAULT_COLUMN_COLOR, downloadJson, type Column, type Issue } from "../api";
 import IssueDrawer from "../components/IssueDrawer";
 import BoardSettingsDrawer from "../components/BoardSettingsDrawer";
-import ImportDialog from "../components/ImportDialog";
+import ColorPicker from "../components/ColorPicker";
 
 export default function BoardPage() {
   const { boardId = "" } = useParams();
@@ -24,7 +24,6 @@ export default function BoardPage() {
   const [filterCol, setFilterCol] = useState("");
   const [dragging, setDragging] = useState<{ issue?: Issue } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [dndError, setDndError] = useState("");
 
   const board = useQuery({ queryKey: ["board", boardId], queryFn: () => api.getBoard(boardId) });
@@ -185,8 +184,7 @@ export default function BoardPage() {
         <div className="board-title-row">
           <h1 className="board-title">{b.name}</h1>
           <BoardMenu boardId={boardId} boardName={b.name}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onOpenImport={() => setImportOpen(true)} />
+            onOpenSettings={() => setSettingsOpen(true)} />
         </div>
         {b.description && <div className="board-desc">{b.description}</div>}
       </div>
@@ -239,7 +237,12 @@ export default function BoardPage() {
                     </div>
                     {i.description && <div className="muted">{i.description.slice(0, 80)}</div>}
                   </td>
-                  <td><span className="status-badge" style={{ background: colColor(i.columnId) }}>● {colName(i.columnId)}</span></td>
+                  <td>
+                    <span className="status-badge">
+                      <span className="dot" style={{ background: colColor(i.columnId) }} aria-hidden="true" />
+                      {colName(i.columnId)}
+                    </span>
+                  </td>
                   <td className="muted">{commentCounts.get(i.id) ?? 0}</td>
                   <td className="muted">{new Date(i.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</td>
                 </tr>
@@ -277,8 +280,6 @@ export default function BoardPage() {
           onChanged={invalidate}
         />
       )}
-      {importOpen && <ImportDialog onClose={() => setImportOpen(false)} />}
-
       {activeIssue && (
         <IssueDrawer
           issueId={activeIssue}
@@ -351,15 +352,13 @@ function KanbanColumn({ column, issues, commentCounts, selectedId, dragActive, a
         <div className="col-rename">
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Column name"
             onKeyDown={(e) => { if (e.key === "Enter") saveRename(); if (e.key === "Escape") setRenaming(false); }} />
-          <div className="color-pick">
-            {COLORS.map((c) => (
-              <button key={c} style={{ background: c }} aria-label={`Color ${c}`}
-                className={color === c ? "sel" : ""} onClick={() => setColor(c)} />
-            ))}
-          </div>
+          <ColorPicker
+            value={color}
+            defaultColor={DEFAULT_COLUMN_COLOR}
+            label="Column color"
+            onChange={(next) => setColor(next ?? DEFAULT_COLUMN_COLOR)}
+          />
           <div className="row">
-            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} aria-label="Custom color" />
-            <button className="btn-ghost" onClick={() => setColor(DEFAULT_COLUMN_COLOR)}>Reset</button>
             <button className="btn primary" onClick={saveRename}>Save</button>
             <button className="btn-ghost" onClick={() => setRenaming(false)}>Cancel</button>
           </div>
@@ -378,8 +377,7 @@ function KanbanColumn({ column, issues, commentCounts, selectedId, dragActive, a
             </button>
             {menuOpen && (
               <div className="menu" role="menu">
-                <button className="menu-item" role="menuitem" onClick={() => { setName(column.name); setColor(column.color); setRenaming(true); setMenuOpen(false); }}>Rename</button>
-                <button className="menu-item" role="menuitem" onClick={() => { setName(column.name); setColor(column.color); setRenaming(true); setMenuOpen(false); }}>Change color</button>
+                <button className="menu-item" role="menuitem" onClick={() => { setName(column.name); setColor(column.color); setRenaming(true); setMenuOpen(false); }}>Edit column</button>
                 <div className="menu-divider" />
                 <button className="menu-item danger" role="menuitem" onClick={() => {
                   setMenuOpen(false);
@@ -528,8 +526,8 @@ function useCloseOnOutside(open: boolean, onClose: () => void) {
   return ref;
 }
 
-function BoardMenu({ boardId, boardName, onOpenSettings, onOpenImport }: {
-  boardId: string; boardName: string; onOpenSettings: () => void; onOpenImport: () => void;
+function BoardMenu({ boardId, boardName, onOpenSettings }: {
+  boardId: string; boardName: string; onOpenSettings: () => void;
 }) {
   const qc = useQueryClient();
   const nav = useNavigate();
@@ -581,7 +579,6 @@ function BoardMenu({ boardId, boardName, onOpenSettings, onOpenImport }: {
       {open && (
         <div className="menu" role="menu">
           <button className="menu-item" role="menuitem" onClick={gotoSettings}>Board settings</button>
-          <button className="menu-item" role="menuitem" onClick={() => { setOpen(false); onOpenImport(); }}>Import JSON</button>
           <div className="menu-divider" />
           <button className="menu-item" role="menuitem" onClick={() => exp("kanban", true)}>Export Kanban JSON</button>
           <button className="menu-item" role="menuitem" onClick={() => exp("simple", true)}>Export Simple JSON</button>

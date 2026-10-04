@@ -250,7 +250,7 @@ pre.preview { background: #172b4d; color: #e2e8f0; padding: 12px; border-radius:
 }
 
 /* Batch 4-5 — Kanban columns + issue cards (design.md §8-11) */
-.kanban { padding: 4px 20px 24px; }
+.kanban { padding: 4px 0 24px; }
 .column {
   flex: 0 0 300px; width: 300px; min-width: 280px; max-width: 340px;
   max-height: calc(100vh - 220px);
@@ -315,7 +315,16 @@ pre.preview { background: #172b4d; color: #e2e8f0; padding: 12px; border-radius:
 .drawer-edit { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .drawer-section { margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 12px; }
 .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
-.status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: #fff; border-radius: 999px; padding: 3px 10px; }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--text-secondary);
+  background: var(--bg-subtle); border: 1px solid var(--border-subtle);
+  border-radius: 999px; padding: 3px 9px;
+}
+.status-badge .dot { width: 8px; height: 8px; }
+.status-control { display: flex; align-items: center; gap: 8px; max-width: 240px; }
+.status-control .select { flex: 1; }
+.board-card-meta { margin-top: 10px; }
 .comment { border-bottom: 1px solid var(--border-subtle); padding: 8px 0; }
 .comment-body { font-size: 13px; white-space: pre-wrap; }
 .comment-meta { display: flex; gap: 2px; align-items: center; margin-top: 2px; font-size: 12px; color: var(--text-muted); }
@@ -338,7 +347,7 @@ pre.preview { background: #172b4d; color: #e2e8f0; padding: 12px; border-radius:
 /* Batch 9 — Polish: skeletons, empty states, retry (design.md §24-26) */
 .skeleton { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-hover) 50%, var(--bg-subtle) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.skel-board { display: flex; gap: 12px; padding: 4px 20px 24px; }
+.skel-board { display: flex; gap: 12px; padding: 4px 0 24px; }
 .skel-col { flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px; }
 .col-empty { font-size: 12px; color: var(--text-muted); padding: 2px 8px 6px; }
 @media (max-width: 767px) {
