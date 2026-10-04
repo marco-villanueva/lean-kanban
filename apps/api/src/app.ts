@@ -33,8 +33,3 @@ app.use("/api", importExportRouter);
 app.use((req, res) => {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `Not found: ${req.method} ${req.path}` } });
 });
-
-const port = Number(process.env.PORT ?? 3001);
-if (process.env.VITEST !== "true" && process.argv[1]?.endsWith("app.ts")) {
-  app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
-}
