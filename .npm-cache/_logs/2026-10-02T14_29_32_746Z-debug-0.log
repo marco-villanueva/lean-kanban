@@ -1,0 +1,120 @@
+0 verbose cli /home/marco/.nvm/versions/node/v24.21.0/bin/node /home/marco/.nvm/versions/node/v24.21.0/bin/npm
+1 info using npm@11.19.0
+2 info using node@v24.21.0
+3 silly config load:file:/home/marco/.nvm/versions/node/v24.21.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/marco/.npmrc
+5 silly config load:file:/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/etc/npmrc
+6 verbose title npm install pnpm
+7 verbose argv "install" "--global" "pnpm" "--prefix" "/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global" "--cache" "/home/marco/Documents/deepseek-harness/default-workspace/.npm-cache"
+8 verbose logfile logs-max:10 dir:/home/marco/Documents/deepseek-harness/default-workspace/.npm-cache/_logs/2026-10-02T14_29_32_746Z-
+9 verbose logfile /home/marco/Documents/deepseek-harness/default-workspace/.npm-cache/_logs/2026-10-02T14_29_32_746Z-debug-0.log
+10 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+11 silly logfile done cleaning log files
+12 silly idealTree buildDeps
+13 silly fetch manifest pnpm@*
+14 silly packumentCache full:https://registry.npmjs.org/pnpm cache-miss
+15 http cache https://registry.npmjs.org/pnpm 33ms (cache hit)
+16 silly packumentCache full:https://registry.npmjs.org/pnpm set size:5652413 disposed:false
+17 silly placeDep ROOT pnpm@12.8.1 OK for:  want: *
+18 silly fetch manifest @pnpm/exe.linux-x64@12.8.1
+19 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-x64 cache-miss
+20 silly fetch manifest @pnpm/exe.win32-x64@12.8.1
+21 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.win32-x64 cache-miss
+22 silly fetch manifest @pnpm/exe.darwin-x64@12.8.1
+23 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.darwin-x64 cache-miss
+24 silly fetch manifest @pnpm/exe.android-x64@12.8.1
+25 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.android-x64 cache-miss
+26 silly fetch manifest @pnpm/exe.freebsd-x64@12.8.1
+27 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.freebsd-x64 cache-miss
+28 silly fetch manifest @pnpm/exe.linux-arm64@12.8.1
+29 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-arm64 cache-miss
+30 silly fetch manifest @pnpm/exe.linux-ppc64@12.8.1
+31 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-ppc64 cache-miss
+32 http cache https://registry.npmjs.org/@pnpm%2fexe.win32-x64 15ms (cache hit)
+33 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.win32-x64 set size:86856 disposed:false
+34 silly fetch manifest @pnpm/exe.linux-s390x@12.8.1
+35 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-s390x cache-miss
+36 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-x64 18ms (cache hit)
+37 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-x64 set size:87600 disposed:false
+38 silly fetch manifest @pnpm/exe.win32-arm64@12.8.1
+39 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.win32-arm64 cache-miss
+40 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-ppc64 17ms (cache hit)
+41 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-ppc64 set size:16387 disposed:false
+42 silly fetch manifest @pnpm/exe.darwin-arm64@12.8.1
+43 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.darwin-arm64 cache-miss
+44 http cache https://registry.npmjs.org/@pnpm%2fexe.darwin-x64 21ms (cache hit)
+45 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.darwin-x64 set size:87035 disposed:false
+46 silly fetch manifest @pnpm/exe.android-arm64@12.8.1
+47 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.android-arm64 cache-miss
+48 http cache https://registry.npmjs.org/@pnpm%2fexe.android-x64 22ms (cache hit)
+49 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.android-x64 set size:16215 disposed:false
+50 silly fetch manifest @pnpm/exe.linux-riscv64@12.8.1
+51 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-riscv64 cache-miss
+52 http cache https://registry.npmjs.org/@pnpm%2fexe.freebsd-x64 23ms (cache hit)
+53 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.freebsd-x64 set size:16210 disposed:false
+54 silly fetch manifest @pnpm/exe.linux-x64-musl@12.8.1
+55 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-x64-musl cache-miss
+56 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-arm64 26ms (cache hit)
+57 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-arm64 set size:88442 disposed:false
+58 silly fetch manifest @pnpm/exe.linux-arm64-musl@12.8.1
+59 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-arm64-musl cache-miss
+60 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-s390x 26ms (cache hit)
+61 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-s390x set size:16384 disposed:false
+62 http cache https://registry.npmjs.org/@pnpm%2fexe.darwin-arm64 25ms (cache hit)
+63 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.darwin-arm64 set size:87882 disposed:false
+64 http cache https://registry.npmjs.org/@pnpm%2fexe.win32-arm64 27ms (cache hit)
+65 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.win32-arm64 set size:87690 disposed:false
+66 http cache https://registry.npmjs.org/@pnpm%2fexe.android-arm64 25ms (cache hit)
+67 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.android-arm64 set size:16370 disposed:false
+68 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-riscv64 23ms (cache hit)
+69 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-riscv64 set size:16542 disposed:false
+70 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-x64-musl 22ms (cache hit)
+71 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-x64-musl set size:89358 disposed:false
+72 http cache https://registry.npmjs.org/@pnpm%2fexe.linux-arm64-musl 21ms (cache hit)
+73 silly packumentCache full:https://registry.npmjs.org/@pnpm%2fexe.linux-arm64-musl set size:90195 disposed:false
+74 silly placeDep node_modules/pnpm @pnpm/exe.android-arm64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+75 silly placeDep node_modules/pnpm @pnpm/exe.android-x64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+76 silly placeDep node_modules/pnpm @pnpm/exe.darwin-arm64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+77 silly placeDep node_modules/pnpm @pnpm/exe.darwin-x64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+78 silly placeDep node_modules/pnpm @pnpm/exe.freebsd-x64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+79 silly placeDep node_modules/pnpm @pnpm/exe.linux-arm64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+80 silly placeDep node_modules/pnpm @pnpm/exe.linux-arm64-musl@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+81 silly placeDep node_modules/pnpm @pnpm/exe.linux-ppc64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+82 silly placeDep node_modules/pnpm @pnpm/exe.linux-riscv64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+83 silly placeDep node_modules/pnpm @pnpm/exe.linux-s390x@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+84 silly placeDep node_modules/pnpm @pnpm/exe.linux-x64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+85 silly placeDep node_modules/pnpm @pnpm/exe.linux-x64-musl@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+86 silly placeDep node_modules/pnpm @pnpm/exe.win32-arm64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+87 silly placeDep node_modules/pnpm @pnpm/exe.win32-x64@12.8.1 OK for: pnpm@12.8.1 want: 12.8.1
+88 silly reify mark retired [
+88 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/lib/node_modules/pnpm',
+88 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pnpm',
+88 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pn',
+88 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pnpx',
+88 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pnx'
+88 silly reify ]
+89 silly reify moves {
+89 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/lib/node_modules/pnpm': '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/lib/node_modules/.pnpm-n02wCWKW',
+89 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pnpm': '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/.pnpm-U1yPgRWh',
+89 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pn': '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/.pn-64gknobm',
+89 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pnpx': '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/.pnpx-7mzTu5JU',
+89 silly reify   '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/pnx': '/home/marco/Documents/deepseek-harness/default-workspace/.pnpm-global/bin/.pnx-2bauUhXt'
+89 silly reify }
+90 http cache pnpm@https://registry.npmjs.org/pnpm/-/pnpm-12.8.1.tgz 0ms (cache hit)
+91 http cache @pnpm/exe.linux-x64@https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.8.1.tgz 0ms (cache hit)
+92 info run pnpm@12.8.1 preinstall node_modules/pnpm node install.js
+93 info run pnpm@12.8.1 preinstall { code: 0, signal: null }
+94 info run pnpm@12.8.1 postinstall node_modules/pnpm node install.js
+95 info run pnpm@12.8.1 postinstall { code: 0, signal: null }
+96 silly CHANGE node_modules/pnpm
+97 silly CHANGE node_modules/pnpm/node_modules/@pnpm/exe.linux-x64
+98 warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+98 warn install-scripts   pnpm@12.8.1 (preinstall: node install.js; postinstall: node install.js)
+98 warn install-scripts
+98 warn install-scripts Run `npm install -g --allow-scripts=pnpm` to allow these scripts once, or `npm config set allow-scripts=pnpm --location=user` to allow them for all global installs.
+99 verbose cwd /home/marco/Documents/deepseek-harness/default-workspace
+100 verbose os Linux 7.0.0-38-generic
+101 verbose node v24.21.0
+102 verbose npm  v11.19.0
+103 verbose exit 0
+104 info ok
