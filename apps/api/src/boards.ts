@@ -26,12 +26,21 @@ function rowToBoard(r: any) {
     description: r.description ?? "",
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    ...(r.column_count !== undefined ? { columnCount: Number(r.column_count) } : {}),
+    ...(r.issue_count !== undefined ? { issueCount: Number(r.issue_count) } : {}),
   };
 }
 
-// GET /api/boards — list
+// GET /api/boards — list with lightweight counts for board cards
 boardsRouter.get("/", (_req, res) => {
-  const rows = db.prepare("SELECT * FROM boards ORDER BY created_at DESC").all() as any[];
+  const rows = db.prepare(`
+    SELECT
+      b.*,
+      (SELECT COUNT(*) FROM columns c WHERE c.board_id = b.id) AS column_count,
+      (SELECT COUNT(*) FROM issues i WHERE i.board_id = b.id) AS issue_count
+    FROM boards b
+    ORDER BY b.created_at DESC
+  `).all() as any[];
   res.json({ boards: rows.map(rowToBoard) });
 });
 

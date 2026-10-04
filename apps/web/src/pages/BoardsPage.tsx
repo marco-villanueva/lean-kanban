@@ -44,7 +44,6 @@ export default function BoardsPage({ onNewBoard }: { onNewBoard: () => void }) {
             onChange={(e) => setSearch(e.target.value)}
           />
           <button className="btn" onClick={() => setImportOpen(true)}>Import</button>
-          <button className="btn primary" onClick={onNewBoard}>+ New board</button>
         </div>
       </div>
 
@@ -106,6 +105,9 @@ export default function BoardsPage({ onNewBoard }: { onNewBoard: () => void }) {
               </div>
             </div>
             <div className="muted">{b.description || "—"}</div>
+            <div className="board-card-meta muted">
+              {b.columnCount ?? 0} columns · {b.issueCount ?? 0} issues
+            </div>
           </article>
         ))}
       </div>

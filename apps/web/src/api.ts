@@ -1,4 +1,12 @@
-export interface Board { id: string; name: string; description: string; createdAt: string; updatedAt: string }
+export interface Board {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  columnCount?: number;
+  issueCount?: number;
+}
 export interface Column { id: string; boardId: string; name: string; color: string; position: number; createdAt: string; updatedAt: string }
 export interface Issue { id: string; boardId: string; columnId: string; title: string; description: string; color: string | null; position: number; createdAt: string; updatedAt: string }
 export interface Comment { id: string; issueId: string; content: string; createdAt: string; updatedAt: string }
