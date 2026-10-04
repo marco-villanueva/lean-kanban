@@ -369,3 +369,11 @@ docs/
 ```
 
 The project should remain understandable by browsing these directories directly. New architectural layers should be added only when real product pressure justifies them.
+
+## Release checklist
+
+Before tagging a release candidate, run the automated and manual checklist in:
+
+```text
+docs/release-checklist.md
+```

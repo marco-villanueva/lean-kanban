@@ -83,6 +83,21 @@ async function createIssue(boardId: string, columnId: string, title: string, col
   return response.body.issue;
 }
 
+test("board list includes lightweight column and issue counts", async () => {
+  const board = await createBoard("Counts");
+  const todo = await createColumn(board.id, "Todo");
+  await createColumn(board.id, "Done");
+  await createIssue(board.id, todo.id, "One");
+  await createIssue(board.id, todo.id, "Two");
+
+  const listed = await request("/api/boards");
+  assert.equal(listed.status, 200);
+  const item = listed.body.boards.find((candidate: any) => candidate.id === board.id);
+  assert.ok(item);
+  assert.equal(item.columnCount, 2);
+  assert.equal(item.issueCount, 2);
+});
+
 test("board CRUD and validation", async () => {
   const invalid = await request("/api/boards", {
     method: "POST",
