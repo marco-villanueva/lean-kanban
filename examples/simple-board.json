@@ -1,0 +1,33 @@
+{
+  "name": "Product Launch",
+  "description": "Simple JSON intended for people and agents.",
+  "columns": [
+    {
+      "name": "Todo",
+      "color": "#2563EB",
+      "issues": [
+        {
+          "title": "Draft landing page copy",
+          "description": "Write the first version of the hero and CTA.",
+          "color": "#7C3AED",
+          "comments": ["Keep the first version intentionally short."]
+        }
+      ]
+    },
+    {
+      "name": "Doing",
+      "color": "#CA8A04",
+      "issues": [
+        {
+          "title": "Verify analytics events",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "name": "Done",
+      "color": "#16A34A",
+      "issues": []
+    }
+  ]
+}

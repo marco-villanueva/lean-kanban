@@ -1,0 +1,10 @@
+{
+  "name": "Invalid color example",
+  "columns": [
+    {
+      "name": "Todo",
+      "color": "blue",
+      "issues": []
+    }
+  ]
+}

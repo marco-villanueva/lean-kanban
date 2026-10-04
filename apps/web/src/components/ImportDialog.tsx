@@ -75,6 +75,7 @@ export default function ImportDialog({ onClose }: { onClose: () => void }) {
         {preview && (
           <div className="card" style={{ marginTop: 8 }}>
             Preview: <strong>{preview.name}</strong> — {preview.columns} columns, {preview.issues} issues ({preview.kind})
+            <div className="muted" style={{ marginTop: 4 }}>Full validation runs when you import.</div>
           </div>
         )}
         <div className="row" style={{ marginTop: 8, justifyContent: "flex-end" }}>

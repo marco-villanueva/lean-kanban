@@ -1,0 +1,19 @@
+{
+  "format": "lean-kanban",
+  "version": 1,
+  "board": { "name": "Invalid reference example", "description": "" },
+  "columns": [
+    { "id": "todo", "name": "Todo", "color": "#2563EB", "position": 0 }
+  ],
+  "issues": [
+    {
+      "id": "broken",
+      "columnId": "missing-column",
+      "title": "This issue references a missing column",
+      "description": "",
+      "color": null,
+      "position": 0,
+      "comments": []
+    }
+  ]
+}

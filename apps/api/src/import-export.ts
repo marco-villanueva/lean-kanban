@@ -18,6 +18,7 @@ function err(res: any, status: number, code: string, message: string) {
 }
 
 const portableIdSchema = z.string().min(1).max(200);
+const exportFormatSchema = z.enum(["kanban", "simple"]);
 
 // ---- Full format (lean-kanban v1) ----
 const fullSchema = z.object({
@@ -192,11 +193,15 @@ function slug(s: string): string {
 
 // GET /api/boards/:boardId/export?format=kanban|simple
 importExportRouter.get("/boards/:boardId/export", (req, res) => {
-  const format = (req.query.format as string) ?? "kanban";
+  const parsedFormat = exportFormatSchema.safeParse(req.query.format ?? "kanban");
+  if (!parsedFormat.success) {
+    return err(res, 400, "INVALID_FORMAT", 'format must be "kanban" or "simple"');
+  }
+
   const board = db.prepare("SELECT * FROM boards WHERE id = ?").get(req.params.boardId) as any;
   if (!board) return err(res, 404, "BOARD_NOT_FOUND", "Board not found");
 
-  if (format === "simple") return res.json(buildSimple(board.id));
+  if (parsedFormat.data === "simple") return res.json(buildSimple(board.id));
   return res.json(buildFull(board.id));
 });
 
@@ -216,7 +221,10 @@ importExportRouter.post("/boards/import", (req, res) => {
   const isFull = (body as any).format === "lean-kanban";
 
   if (isFull) {
-    for (const c of (body as any).columns ?? []) {
+    const rawColumns = Array.isArray((body as any).columns) ? (body as any).columns : [];
+    const rawIssues = Array.isArray((body as any).issues) ? (body as any).issues : [];
+
+    for (const c of rawColumns) {
       if (badColor(c?.color)) {
         return err(
           res,
@@ -227,7 +235,7 @@ importExportRouter.post("/boards/import", (req, res) => {
       }
     }
 
-    for (const i of (body as any).issues ?? []) {
+    for (const i of rawIssues) {
       if (badColor(i?.color)) {
         return err(
           res,
@@ -340,7 +348,9 @@ importExportRouter.post("/boards/import", (req, res) => {
     });
   }
 
-  for (const c of (body as any).columns ?? []) {
+  const rawColumns = Array.isArray((body as any).columns) ? (body as any).columns : [];
+
+  for (const c of rawColumns) {
     if (badColor(c?.color)) {
       return err(
         res,
@@ -350,7 +360,8 @@ importExportRouter.post("/boards/import", (req, res) => {
       );
     }
 
-    for (const i of c?.issues ?? []) {
+    const rawIssues = Array.isArray(c?.issues) ? c.issues : [];
+    for (const i of rawIssues) {
       if (badColor(i?.color)) {
         return err(
           res,
